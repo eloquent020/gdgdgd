@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>덕담 구슬 뽑기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #e8433a;
+    --red-dark: #b72c25;
+    --gold: #ffcf4a;
+    --cream: #fff6e5;
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Gowun Dodum', sans-serif;
+    background: radial-gradient(ellipse at top, #3b1d5c 0%, #1a0f2e 60%, #0d0718 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* 배경 반짝이 */
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star {
+    position: absolute; width: 3px; height: 3px; border-radius: 50%;
+    background: #fff; opacity: .6; animation: twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle { 0%,100% { opacity: .15; transform: scale(.6);} 50% { opacity: .9; transform: scale(1.2);} }
+
+  h1 {
+    font-family: 'Jua', sans-serif;
+    font-size: clamp(28px, 6vw, 44px);
+    color: var(--gold);
+    text-shadow: 0 0 18px rgba(255,207,74,.6), 0 4px 0 #8a4b00;
+    margin-bottom: 4px;
+    z-index: 1;
+    letter-spacing: 2px;
+  }
+  .sub { font-size: 15px; opacity: .8; margin-bottom: 18px; z-index: 1; }
+
+  /* ===== 기계 ===== */
+  .machine {
+    position: relative;
+    width: 320px;
+    z-index: 1;
+    transform-origin: 50% 100%;
+  }
+  .machine.shake { animation: machineShake .6s ease-in-out; }
+  @keyframes machineShake {
+    0%,100% { transform: rotate(0); }
+    15% { transform: rotate(-2.5deg); }
+    30% { transform: rotate(2.5deg); }
+    45% { transform: rotate(-2deg); }
+    60% { transform: rotate(2deg); }
+    75% { transform: rotate(-1deg); }
+  }
+  .cap {
+    width: 140px; height: 26px; margin: 0 auto;
+    background: linear-gradient(#ff6a60, var(--red-dark));
+    border-radius: 14px 14px 4px 4px;
+    box-shadow: inset 0 3px 0 rgba(255,255,255,.35);
+    position: relative;
+  }
+  .cap::before {
+    content: ''; position: absolute; left: 50%; top: -14px; transform: translateX(-50%);
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff6b0, var(--gold) 50%, #c58a00);
+    box-shadow: 0 0 12px var(--gold);
+  }
+  .dome-wrap {
+    position: relative; width: 300px; height: 300px; margin: -6px auto 0;
+  }
+  .dome {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 50% 55%, rgba(255,255,255,.08), rgba(160,200,255,.12) 70%, rgba(255,255,255,.25) 100%);
+    border: 6px solid rgba(255,255,255,.35);
+    box-shadow: 0 0 40px rgba(140,180,255,.25), inset 0 -10px 30px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+  #ballCanvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
+  .glare {
+    position: absolute; left: 14%; top: 10%; width: 32%; height: 22%;
+    border-radius: 50%;
+    background: linear-gradient(160deg, rgba(255,255,255,.7), rgba(255,255,255,0));
+    transform: rotate(-25deg); pointer-events: none;
+  }
+  .glare2 {
+    position: absolute; right: 16%; bottom: 14%; width: 10%; height: 10%;
+    border-radius: 50%; background: rgba(255,255,255,.25); pointer-events: none;
+  }
+  .neck {
+    width: 120px; height: 22px; margin: -14px auto 0; position: relative; z-index: 2;
+    background: linear-gradient(#d9d9d9, #8f8f8f);
+    border-radius: 6px;
+  }
+  .body {
+    position: relative;
+    width: 300px; height: 230px; margin: 0 auto;
+    background: linear-gradient(135deg, #ff6a60 0%, var(--red) 45%, var(--red-dark) 100%);
+    border-radius: 20px 20px 28px 28px;
+    box-shadow: inset 0 6px 0 rgba(255,255,255,.25), inset 0 -10px 0 rgba(0,0,0,.18), 0 20px 40px rgba(0,0,0,.5);
+  }
+  .label {
+    position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--cream); color: var(--red-dark);
+    font-family: 'Jua', sans-serif; font-size: 18px;
+    padding: 6px 18px; border-radius: 10px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.2);
+    white-space: nowrap;
+  }
+  .counter {
+    position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+    font-size: 13px; color: #ffe6e3; opacity: .9;
+  }
+  /* 손잡이 */
+  .knob-wrap {
+    position: absolute; left: 38px; top: 98px;
+    width: 92px; height: 92px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #fafafa, #b9b9b9 60%, #7d7d7d);
+    box-shadow: 0 5px 0 rgba(0,0,0,.25), inset 0 -4px 8px rgba(0,0,0,.25);
+    cursor: pointer;
+  }
+  .knob {
+    position: absolute; inset: 10px; border-radius: 50%;
+    transition: transform 1s cubic-bezier(.45,.05,.35,1);
+  }
+  .knob::before {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 64px; height: 18px; transform: translate(-50%,-50%);
+    background: linear-gradient(#ffe27a, #e0a800);
+    border-radius: 9px; box-shadow: 0 2px 0 #9a6b00;
+  }
+  .knob::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 18px; height: 18px; transform: translate(-50%,-50%);
+    background: #fff; border-radius: 50%; box-shadow: 0 0 0 3px #c58a00;
+  }
+  .knob-wrap:hover { filter: brightness(1.08); }
+  .knob-wrap.disabled { cursor: not-allowed; filter: grayscale(.4) brightness(.85); }
+  .hint {
+    position: absolute; left: 32px; top: 196px; width: 104px; text-align: center;
+    font-family: 'Jua', sans-serif; font-size: 14px; color: #fff3c4;
+    animation: bob 1.4s infinite ease-in-out;
+  }
+  @keyframes bob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-4px);} }
+  /* 출구 */
+  .exit {
+    position: absolute; right: 34px; top: 104px;
+    width: 104px; height: 96px; border-radius: 14px 14px 50px 50px;
+    background: radial-gradient(ellipse at 50% 30%, #2a0d0a, #120403);
+    box-shadow: inset 0 8px 14px rgba(0,0,0,.8), 0 0 0 6px #c9c9c9, 0 0 0 9px #888;
+    overflow: visible;
+  }
+  .flap {
+    position: absolute; left: 6px; right: 6px; top: 4px; height: 34px;
+    background: linear-gradient(rgba(255,255,255,.45), rgba(255,255,255,.12));
+    border-radius: 8px 8px 4px 4px; transform-origin: top center;
+    transition: transform .3s;
+  }
+  .exit.open .flap { transform: perspective(200px) rotateX(70deg); }
+  .feet { display: flex; justify-content: space-between; width: 260px; margin: -4px auto 0; }
+  .feet span { width: 40px; height: 14px; background: #5a1410; border-radius: 0 0 8px 8px; }
+
+  /* ===== 떨어지는 캡슐 ===== */
+  .capsule {
+    position: absolute; width: 64px; height: 64px;
+    left: 50%; top: 50%; margin: -32px 0 0 -32px;
+    cursor: pointer; z-index: 5;
+  }
+  .capsule .half {
+    position: absolute; left: 0; width: 64px; height: 32px; overflow: hidden;
+    transition: transform .55s cubic-bezier(.2,1.4,.4,1);
+  }
+  .capsule .top { top: 0; border-radius: 32px 32px 0 0; }
+  .capsule .bottom { bottom: 0; border-radius: 0 0 32px 32px;
+    background: linear-gradient(#ffffff, #dcdcdc);
+    box-shadow: inset 0 -5px 8px rgba(0,0,0,.15);
+  }
+  .capsule .top::after {
+    content: ''; position: absolute; left: 12px; top: 7px; width: 18px; height: 9px;
+    border-radius: 50%; background: rgba(255,255,255,.65); transform: rotate(-25deg);
+  }
+  .capsule .seam {
+    position: absolute; left: 0; right: 0; top: 30px; height: 4px; background: rgba(0,0,0,.15);
+  }
+  .capsule.drop { animation: dropIn .9s cubic-bezier(.3,0,.5,1) forwards; }
+  @keyframes dropIn {
+    0% { transform: translateY(-70px) scale(.6); opacity: 0; }
+    40% { opacity: 1; }
+    65% { transform: translateY(10px) scale(1); }
+    80% { transform: translateY(-6px) scale(1); }
+    100% { transform: translateY(6px) scale(1); }
+  }
+  .capsule.idle { animation: wiggle 1.6s infinite ease-in-out; transform: translateY(6px); }
+  @keyframes wiggle {
+    0%,100% { transform: translateY(6px) rotate(0); }
+    10% { transform: translateY(6px) rotate(-8deg); }
+    20% { transform: translateY(6px) rotate(8deg); }
+    30% { transform: translateY(6px) rotate(0); }
+  }
+  .tap-tip {
+    position: absolute; right: 22px; top: 208px; width: 120px; text-align: center;
+    font-family: 'Jua', sans-serif; font-size: 14px; color: #fff3c4;
+    opacity: 0; transition: opacity .3s;
+    animation: bob 1.4s infinite ease-in-out;
+  }
+  .tap-tip.show { opacity: 1; }
+
+  /* ===== 오프닝 스테이지 ===== */
+  .stage {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10,4,20,0);
+    pointer-events: none;
+    transition: background .4s;
+  }
+  .stage.active { background: rgba(10,4,20,.82); pointer-events: auto; }
+  .rays {
+    position: absolute; width: 900px; height: 900px; left: 50%; top: 50%;
+    margin: -450px 0 0 -450px; border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,230,140,.55) 0deg 8deg, rgba(255,230,140,0) 8deg 20deg);
+    -webkit-mask: radial-gradient(circle, #000 0%, rgba(0,0,0,.7) 30%, transparent 65%);
+            mask: radial-gradient(circle, #000 0%, rgba(0,0,0,.7) 30%, transparent 65%);
+    opacity: 0; transform: scale(.2);
+    transition: opacity .5s, transform .8s cubic-bezier(.2,1,.3,1);
+  }
+  .stage.burst .rays { opacity: 1; transform: scale(1); animation: spin 14s linear infinite; }
+  @keyframes spin { to { rotate: 360deg; } }
+  .glow {
+    position: absolute; width: 360px; height: 360px; left: 50%; top: 50%;
+    margin: -180px 0 0 -180px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,220,.95), rgba(255,210,90,.5) 35%, transparent 70%);
+    opacity: 0; transform: scale(.3);
+    transition: opacity .4s, transform .6s;
+  }
+  .stage.burst .glow { opacity: .75; transform: scale(1); animation: pulse 2s infinite ease-in-out; }
+  @keyframes pulse { 0%,100% { filter: brightness(1);} 50% { filter: brightness(1.25);} }
+
+  .big-capsule {
+    position: absolute; left: 50%; top: 50%;
+    width: 140px; height: 140px; margin: -70px 0 0 -70px;
+    transform: scale(0);
+  }
+  .stage.active .big-capsule { animation: popIn .5s cubic-bezier(.2,1.6,.4,1) forwards; }
+  .big-capsule.charge { animation: charge 1s ease-in forwards !important; }
+  @keyframes popIn { to { transform: scale(1); } }
+  @keyframes charge {
+    0% { transform: scale(1) rotate(0); filter: brightness(1); }
+    20% { transform: scale(1.04) rotate(-6deg); }
+    40% { transform: scale(1.06) rotate(7deg); filter: brightness(1.3); }
+    60% { transform: scale(1.1) rotate(-9deg); filter: brightness(1.6); }
+    80% { transform: scale(1.14) rotate(10deg); filter: brightness(2.2) drop-shadow(0 0 30px #fff6b0); }
+    100% { transform: scale(1.2) rotate(0); filter: brightness(3) drop-shadow(0 0 60px #fff); }
+  }
+  .big-capsule .half {
+    position: absolute; left: 0; width: 140px; height: 70px; overflow: hidden;
+    transition: transform .7s cubic-bezier(.2,1.2,.4,1), opacity .7s;
+  }
+  .big-capsule .top { top: 0; border-radius: 70px 70px 0 0; }
+  .big-capsule .top::after {
+    content: ''; position: absolute; left: 26px; top: 16px; width: 40px; height: 18px;
+    border-radius: 50%; background: rgba(255,255,255,.65); transform: rotate(-25deg);
+  }
+  .big-capsule .bottom { bottom: 0; border-radius: 0 0 70px 70px;
+    background: linear-gradient(#ffffff, #d8d8d8);
+    box-shadow: inset 0 -10px 16px rgba(0,0,0,.15);
+  }
+  .big-capsule.open .top { transform: translate(-150px, -170px) rotate(-60deg); opacity: 0; }
+  .big-capsule.open .bottom { transform: translate(150px, 190px) rotate(50deg); opacity: 0; }
+
+  /* 번쩍 */
+  .flash {
+    position: fixed; inset: 0; z-index: 60; pointer-events: none;
+    background: radial-gradient(circle, #ffffff 0%, #fff8d8 50%, #ffe9a0 100%);
+    opacity: 0;
+  }
+  .flash.go { animation: flash 1s ease-out; }
+  @keyframes flash {
+    0% { opacity: 0; }
+    8% { opacity: 1; }
+    25% { opacity: .95; }
+    100% { opacity: 0; }
+  }
+  .ring {
+    position: fixed; left: 50%; top: 50%; width: 40px; height: 40px;
+    margin: -20px 0 0 -20px; border-radius: 50%;
+    border: 6px solid rgba(255,240,180,.9);
+    z-index: 55; pointer-events: none;
+    animation: ring .9s ease-out forwards;
+  }
+  @keyframes ring { from { transform: scale(.5); opacity: 1; } to { transform: scale(22); opacity: 0; border-width: 1px; } }
+  #fx { position: fixed; inset: 0; z-index: 56; pointer-events: none; }
+
+  /* 덕담 카드 */
+  .card {
+    position: relative; z-index: 58;
+    width: min(88vw, 380px);
+    background: linear-gradient(160deg, #fffaf0, #fff0d2);
+    color: #4a2410;
+    border-radius: 22px;
+    padding: 34px 26px 26px;
+    text-align: center;
+    box-shadow: 0 0 0 4px var(--gold), 0 0 0 8px rgba(255,207,74,.35), 0 0 60px rgba(255,207,74,.6);
+    opacity: 0; transform: scale(.3) rotate(-8deg);
+    pointer-events: none;
+  }
+  .card.show { animation: cardIn .7s cubic-bezier(.2,1.5,.4,1) forwards; pointer-events: auto; }
+  @keyframes cardIn { to { opacity: 1; transform: scale(1) rotate(0); } }
+  .card .ribbon {
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    background: var(--red); color: #fff; font-family: 'Jua', sans-serif;
+    padding: 6px 20px; border-radius: 20px; font-size: 16px;
+    box-shadow: 0 3px 0 var(--red-dark); white-space: nowrap;
+  }
+  .card .emoji { font-size: 46px; margin-bottom: 8px; }
+  .card .msg {
+    font-family: 'Jua', sans-serif;
+    font-size: clamp(21px, 5.4vw, 26px);
+    line-height: 1.45; word-break: keep-all;
+    margin-bottom: 10px;
+  }
+  .card .desc { font-size: 15px; opacity: .75; line-height: 1.5; word-break: keep-all; margin-bottom: 20px; }
+  .card .grade {
+    display: inline-block; font-size: 13px; padding: 3px 12px; border-radius: 12px;
+    margin-bottom: 14px; font-weight: bold; color: #fff;
+  }
+  .btn-row { display: flex; gap: 10px; justify-content: center; }
+  .btn {
+    font-family: 'Jua', sans-serif; font-size: 17px;
+    border: none; border-radius: 14px; padding: 11px 20px; cursor: pointer;
+    transition: transform .1s, filter .2s;
+  }
+  .btn:active { transform: translateY(2px); }
+  .btn.primary { background: var(--red); color: #fff; box-shadow: 0 4px 0 var(--red-dark); }
+  .btn.ghost { background: #fff; color: #7a4a20; box-shadow: 0 4px 0 #d9c3a0; }
+  .btn:hover { filter: brightness(1.08); }
+
+  .history {
+    z-index: 1; margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap;
+    justify-content: center; max-width: 340px; min-height: 22px;
+  }
+  .history span {
+    width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.2), 0 0 6px rgba(255,255,255,.3);
+    transition: transform .15s;
+  }
+  .history span:hover { transform: scale(1.3); }
+
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: rgba(0,0,0,.75); padding: 10px 20px; border-radius: 20px; font-size: 14px;
+    transition: transform .3s; z-index: 100;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-height: 760px) {
+    .machine { transform: scale(.85); margin: -40px 0 -50px; }
+    .machine.shake { animation: machineShakeS .6s ease-in-out; }
+    @keyframes machineShakeS {
+      0%,100% { transform: scale(.85) rotate(0); }
+      25% { transform: scale(.85) rotate(-2.5deg); }
+      50% { transform: scale(.85) rotate(2.5deg); }
+      75% { transform: scale(.85) rotate(-1.5deg); }
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+
+  <h1>✨ 덕담 구슬 뽑기 ✨</h1>
+  <p class="sub">손잡이를 돌려 오늘의 덕담을 뽑아보세요</p>
+
+  <div class="machine" id="machine">
+    <div class="cap"></div>
+    <div class="dome-wrap">
+      <div class="dome">
+        <canvas id="ballCanvas" width="600" height="600"></canvas>
+        <div class="glare"></div>
+        <div class="glare2"></div>
+      </div>
+    </div>
+    <div class="neck"></div>
+    <div class="body">
+      <div class="label">복 福 뽑기</div>
+      <div class="counter" id="counter">남은 구슬 0개</div>
+      <div class="knob-wrap" id="knobWrap" title="돌리기">
+        <div class="knob" id="knob"></div>
+      </div>
+      <div class="hint" id="hint">돌려주세요!</div>
+      <div class="exit" id="exit">
+        <div class="flap"></div>
+      </div>
+      <div class="tap-tip" id="tapTip">구슬을 눌러요!</div>
+    </div>
+    <div class="feet"><span></span><span></span></div>
+  </div>
+
+  <div class="history" id="history"></div>
+
+  <div class="stage" id="stage">
+    <div class="rays"></div>
+    <div class="glow"></div>
+    <div class="big-capsule" id="bigCapsule">
+      <div class="half top" id="bigTop"></div>
+      <div class="half bottom"></div>
+    </div>
+    <div class="card" id="card">
+      <div class="ribbon" id="ribbon">오늘의 덕담</div>
+      <div class="emoji" id="cardEmoji">🍀</div>
+      <div class="grade" id="cardGrade">대길</div>
+      <div class="msg" id="cardMsg"></div>
+      <div class="desc" id="cardDesc"></div>
+      <div class="btn-row">
+        <button class="btn ghost" id="copyBtn">복사하기</button>
+        <button class="btn primary" id="againBtn">한 번 더!</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <canvas id="fx"></canvas>
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ================== 덕담 목록 ================== */
+const BLESSINGS = [
+  { e:'🍀', m:'새해 복 많이 받으세요!', d:'올 한 해, 좋은 일만 가득하길 바랄게요.' },
+  { e:'💰', m:'돈이 굴러 들어오는 한 해!', d:'지갑이 두툼해지고 통장이 웃는 날이 이어질 거예요.' },
+  { e:'💪', m:'늘 건강하세요', d:'몸도 마음도 튼튼한 것이 가장 큰 복이에요.' },
+  { e:'🌈', m:'하는 일마다 술술 풀리길', d:'막혔던 일도 시원하게 뚫리는 행운이 찾아와요.' },
+  { e:'😊', m:'웃을 일이 가득할 거예요', d:'웃는 얼굴에 복이 들어온대요. 오늘도 활짝!' },
+  { e:'🏆', m:'꿈꾸던 일을 이루는 해!', d:'차곡차곡 쌓아온 노력이 꽃을 피울 차례예요.' },
+  { e:'❤️', m:'사랑이 넘치는 날들 되세요', d:'곁에 있는 사람들과 더 따뜻해지는 시간이 올 거예요.' },
+  { e:'🌟', m:'당신은 이미 충분히 빛나요', d:'스스로를 믿어요. 좋은 기운이 함께하고 있어요.' },
+  { e:'🍯', m:'꿀 떨어지는 하루 보내세요', d:'달콤한 소식이 문을 두드릴 거예요.' },
+  { e:'🐉', m:'용이 승천하듯 쭉쭉 뻗어나가길', d:'기세 좋게 원하는 곳까지 올라갈 수 있어요.' },
+  { e:'🎯', m:'노린 것은 반드시 맞힌다!', d:'목표에 집중하면 결과가 따라오는 시기예요.' },
+  { e:'🌸', m:'봄날 같은 일만 생기길', d:'포근하고 설레는 일들이 차례로 피어날 거예요.' },
+  { e:'🧧', m:'만사형통 하세요', d:'모든 일이 뜻대로 술술 풀리길 빌어요.' },
+  { e:'🛤️', m:'가는 길마다 꽃길만 걸으세요', d:'발걸음마다 좋은 인연과 기회가 기다려요.' },
+  { e:'🍚', m:'밥 잘 먹고 잠 잘 자는 한 해', d:'소소한 일상이 든든하게 채워지는 행복을 누려요.' },
+  { e:'📈', m:'상승세 타는 중! 쭉 올라가요', d:'지금 흐름이 아주 좋아요. 그대로 가세요.' },
+  { e:'🤝', m:'귀인을 만나게 될 거예요', d:'뜻밖의 사람이 큰 도움을 줄 수 있어요. 인연을 소중히!' },
+  { e:'🎁', m:'뜻밖의 선물이 찾아와요', d:'기대하지 않았던 곳에서 기쁜 일이 생길 거예요.' },
+  { e:'☀️', m:'오늘도 맑음, 내일도 맑음', d:'걱정은 구름처럼 지나가고 햇살만 남을 거예요.' },
+  { e:'🦋', m:'변화가 행운을 데려와요', d:'새로운 시도를 두려워 마세요. 날개를 펼칠 때예요.' },
+  { e:'🏠', m:'집안에 웃음꽃이 피길', d:'가족 모두 평안하고 화목한 나날 보내세요.' },
+  { e:'📚', m:'배우는 것마다 쏙쏙!', d:'공부도 일도 머리에 착착 들어오는 시기예요.' },
+  { e:'🍀', m:'행운이 졸졸 따라다녀요', d:'오늘 하루, 작은 행운들을 찾아보세요.' },
+  { e:'🌙', m:'소원이 이루어지는 해!', d:'마음속에 품은 소원, 가만히 한 번 더 빌어봐요.' },
+  { e:'🎉', m:'축하할 일이 줄줄이!', d:'기쁜 소식이 연달아 들려오는 한 해가 될 거예요.' },
+  { e:'🌻', m:'마음이 늘 평안하길', d:'조급해하지 않아도 괜찮아요. 잘 되고 있어요.' },
+  { e:'🚀', m:'시작하면 무조건 대박!', d:'망설였던 일, 지금이 바로 그때예요.' },
+  { e:'💎', m:'보석 같은 사람, 바로 당신', d:'당신의 가치를 알아보는 사람들이 늘어날 거예요.' },
+  { e:'🐷', m:'복돼지가 복을 싣고 와요', d:'풍성하고 넉넉한 하루가 펼쳐질 거예요.' },
+  { e:'🍊', m:'모든 일이 상큼하게 풀리길', d:'답답했던 마음이 시원해지는 소식이 있을 거예요.' },
+  { e:'🎶', m:'콧노래가 절로 나오는 날', d:'기분 좋은 리듬이 하루 종일 함께할 거예요.' },
+  { e:'🌊', m:'시원하게 막힘없이 나아가요', d:'파도를 타듯 흐름에 맡기면 멀리 갈 수 있어요.' },
+  { e:'🕊️', m:'걱정은 훨훨, 행복은 듬뿍', d:'근심은 날려 보내고 좋은 것만 담아가세요.' },
+  { e:'🧿', m:'나쁜 기운은 싹 물러가라!', d:'든든한 행운이 당신을 지켜주고 있어요.' },
+  { e:'🍰', m:'달콤한 보상이 기다려요', d:'그동안 수고한 당신, 이제 누릴 차례예요.' },
+  { e:'🌱', m:'작은 씨앗이 큰 나무가 돼요', d:'지금 시작한 일이 훗날 든든한 열매를 맺을 거예요.' },
+  { e:'👑', m:'올해의 주인공은 당신!', d:'자신감을 가지고 당당하게 나아가세요.' },
+  { e:'🎐', m:'바라는 대로 다 이루세요', d:'소망하는 모든 것이 하나씩 이루어지길 빌어요.' },
+  { e:'🫶', m:'좋은 사람들과 함께하는 한 해', d:'따뜻한 인연이 당신 곁을 든든히 채워줄 거예요.' },
+  { e:'⭐', m:'운수대통! 오늘 최고의 날', d:'무엇을 해도 잘 풀리는 날이에요. 마음껏 즐기세요!' },
+];
+const GRADES = [
+  { t:'대길 大吉', c:'#e8433a', w:3 },
+  { t:'길 吉', c:'#f08a24', w:5 },
+  { t:'소길 小吉', c:'#3aa66b', w:4 },
+  { t:'행운 幸運', c:'#7a5cf0', w:3 },
+];
+const COLORS = ['#ff5a5a','#ffb23e','#ffe14d','#5ad17a','#4cb8ff','#8b6bff','#ff7ad1','#38e0d0','#ff8a3d'];
+const TOTAL = 24;
+
+/* ================== 배경 별 ================== */
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 60; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.left = Math.random()*100 + '%';
+  s.style.top = Math.random()*100 + '%';
+  s.style.animationDelay = (Math.random()*3) + 's';
+  const sz = 1 + Math.random()*2.5;
+  s.style.width = s.style.height = sz + 'px';
+  starsEl.appendChild(s);
+}
+
+/* ================== 구슬 물리 ================== */
+const canvas = document.getElementById('ballCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const CX = W/2, CY = H/2, R = W/2 - 8;
+let balls = [];
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
+let deck = [];
+function nextBlessing(){
+  if (!deck.length) deck = shuffle([...Array(BLESSINGS.length).keys()]);
+  return deck.pop();
+}
+
+function makeBall(){
+  const r = 42 + Math.random()*6;
+  const ang = Math.random()*Math.PI*2, dist = Math.random()*(R - r - 20);
+  return {
+    x: CX + Math.cos(ang)*dist, y: CY + Math.sin(ang)*dist*0.4 + 60,
+    vx: (Math.random()-.5)*4, vy: (Math.random()-.5)*4,
+    r, color: COLORS[Math.random()*COLORS.length|0],
+    rot: Math.random()*Math.PI*2, vr: 0,
+  };
+}
+function fill(){
+  balls = [];
+  for (let i = 0; i < TOTAL; i++) balls.push(makeBall());
+  updateCounter();
+}
+
+function shadeColor(hex, amt){
+  let n = parseInt(hex.slice(1),16);
+  let r = Math.min(255, Math.max(0, (n>>16) + amt));
+  let g = Math.min(255, Math.max(0, ((n>>8)&255) + amt));
+  let b = Math.min(255, Math.max(0, (n&255) + amt));
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawBall(b){
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(b.rot);
+  // 아래(흰) 반
+  ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI); ctx.closePath();
+  const gw = ctx.createLinearGradient(0,0,0,b.r);
+  gw.addColorStop(0,'#ffffff'); gw.addColorStop(1,'#cfcfcf');
+  ctx.fillStyle = gw; ctx.fill();
+  // 위(색) 반
+  ctx.beginPath(); ctx.arc(0,0,b.r,Math.PI,Math.PI*2); ctx.closePath();
+  const gc = ctx.createLinearGradient(0,-b.r,0,0);
+  gc.addColorStop(0, shadeColor(b.color, 40)); gc.addColorStop(1, shadeColor(b.color, -30));
+  ctx.fillStyle = gc; ctx.fill();
+  // 이음새
+  ctx.fillStyle = 'rgba(0,0,0,.15)';
+  ctx.fillRect(-b.r, -2, b.r*2, 4);
+  ctx.restore();
+  // 하이라이트(회전 무관)
+  ctx.beginPath();
+  ctx.ellipse(b.x - b.r*.35, b.y - b.r*.45, b.r*.28, b.r*.14, -0.5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill();
+  // 테두리
+  ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+let stirring = 0;
+function physics(){
+  const g = 0.45;
+  for (const b of balls){
+    if (stirring > 0){
+      // 기계를 돌릴 때 소용돌이 + 위로 튀기
+      const dx = b.x - CX, dy = b.y - CY;
+      b.vx += -dy * 0.004 + (Math.random()-.5)*1.6;
+      b.vy += dx * 0.004 + (Math.random()-.5)*1.6 - 0.9;
+    }
+    b.vy += g;
+    b.vx *= 0.995; b.vy *= 0.995;
+    b.x += b.vx; b.y += b.vy;
+    b.rot += b.vx * 0.02;
+    // 원형 벽
+    const dx = b.x - CX, dy = b.y - CY;
+    const d = Math.hypot(dx, dy), max = R - b.r;
+    if (d > max){
+      const nx = dx/d, ny = dy/d;
+      b.x = CX + nx*max; b.y = CY + ny*max;
+      const vn = b.vx*nx + b.vy*ny;
+      if (vn > 0){ b.vx -= 1.6*vn*nx; b.vy -= 1.6*vn*ny; }
+      b.vx *= 0.98;
+    }
+  }
+  // 구슬끼리 충돌
+  for (let k = 0; k < 3; k++){
+    for (let i = 0; i < balls.length; i++){
+      for (let j = i+1; j < balls.length; j++){
+        const a = balls[i], c = balls[j];
+        const dx = c.x - a.x, dy = c.y - a.y;
+        const d = Math.hypot(dx, dy), min = a.r + c.r;
+        if (d < min && d > 0){
+          const nx = dx/d, ny = dy/d, ov = (min - d)/2;
+          a.x -= nx*ov; a.y -= ny*ov; c.x += nx*ov; c.y += ny*ov;
+          const rv = (c.vx - a.vx)*nx + (c.vy - a.vy)*ny;
+          if (rv < 0){
+            const imp = -rv * 0.85;
+            a.vx -= imp*nx/2*1.0; a.vy -= imp*ny/2;
+            c.vx += imp*nx/2; c.vy += imp*ny/2;
+          }
+        }
+      }
+    }
+  }
+  if (stirring > 0) stirring--;
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  for (const b of balls) drawBall(b);
+}
+function loop(){ physics(); render(); requestAnimationFrame(loop); }
+
+/* ================== 뽑기 로직 ================== */
+const knobWrap = document.getElementById('knobWrap');
+const knob = document.getElementById('knob');
+const machine = document.getElementById('machine');
+const exitEl = document.getElementById('exit');
+const hint = document.getElementById('hint');
+const tapTip = document.getElementById('tapTip');
+const counter = document.getElementById('counter');
+const historyEl = document.getElementById('history');
+let knobAngle = 0, busy = false, currentCapsule = null, currentResult = null;
+
+function updateCounter(){ counter.textContent = `남은 구슬 ${balls.length}개`; }
+
+function capsuleHTML(color){
+  return `<div class="half top" style="background:linear-gradient(${shadeColor(color,40)}, ${shadeColor(color,-30)})"></div>
+          <div class="half bottom"></div><div class="seam"></div>`;
+}
+
+function turn(){
+  if (busy) return;
+  if (!balls.length){
+    toast('구슬을 다시 채웠어요! 🎊');
+    fill();
+    return;
+  }
+  busy = true;
+  knobWrap.classList.add('disabled');
+  hint.style.opacity = 0;
+  sfx.crank();
+  knobAngle += 360;
+  knob.style.transform = `rotate(${knobAngle}deg)`;
+  machine.classList.remove('shake'); void machine.offsetWidth; machine.classList.add('shake');
+  stirring = 55;
+
+  setTimeout(() => {
+    // 구슬 하나 꺼내기 (가장 아래쪽)
+    let idx = 0;
+    balls.forEach((b,i) => { if (b.y > balls[idx].y) idx = i; });
+    const ball = balls.splice(idx,1)[0];
+    updateCounter();
+
+    const grade = pickGrade();
+    currentResult = { blessing: BLESSINGS[nextBlessing()], color: ball.color, grade };
+
+    exitEl.classList.add('open');
+    const cap = document.createElement('div');
+    cap.className = 'capsule drop';
+    cap.innerHTML = capsuleHTML(ball.color);
+    exitEl.appendChild(cap);
+    currentCapsule = cap;
+    sfx.drop();
+    setTimeout(() => {
+      cap.classList.remove('drop'); cap.classList.add('idle');
+      exitEl.classList.remove('open');
+      tapTip.classList.add('show');
+    }, 900);
+    cap.addEventListener('click', openCapsule, { once: true });
+  }, 1000);
+}
+
+function pickGrade(){
+  const sum = GRADES.reduce((s,g)=>s+g.w,0);
+  let r = Math.random()*sum;
+  for (const g of GRADES){ if ((r -= g.w) < 0) return g; }
+  return GRADES[0];
+}
+
+/* ================== 오프닝 + 번쩍 ================== */
+const stage = document.getElementById('stage');
+const big = document.getElementById('bigCapsule');
+const bigTop = document.getElementById('bigTop');
+const flash = document.getElementById('flash');
+const card = document.getElementById('card');
+
+function openCapsule(){
+  if (!currentCapsule) return;
+  tapTip.classList.remove('show');
+  currentCapsule.remove(); currentCapsule = null;
+  const { color, blessing, grade } = currentResult;
+
+  bigTop.style.background = `linear-gradient(${shadeColor(color,40)}, ${shadeColor(color,-30)})`;
+  big.className = 'big-capsule';
+  card.className = 'card';
+  stage.className = 'stage active';
+
+  setTimeout(() => {
+    big.classList.add('charge');
+    sfx.charge();
+  }, 550);
+
+  setTimeout(() => {
+    // 번쩍!
+    flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+    for (let i = 0; i < 3; i++){
+      setTimeout(() => {
+        const ring = document.createElement('div');
+        ring.className = 'ring';
+        document.body.appendChild(ring);
+        setTimeout(() => ring.remove(), 1000);
+      }, i*120);
+    }
+    sfx.flash();
+    big.classList.remove('charge'); big.classList.add('open');
+    stage.classList.add('burst');
+    burstParticles(color);
+
+    document.getElementById('cardEmoji').textContent = blessing.e;
+    document.getElementById('cardMsg').textContent = blessing.m;
+    document.getElementById('cardDesc').textContent = blessing.d;
+    const gEl = document.getElementById('cardGrade');
+    gEl.textContent = grade.t; gEl.style.background = grade.c;
+    card.style.boxShadow = `0 0 0 4px ${color}, 0 0 0 8px ${color}55, 0 0 70px ${color}aa`;
+    setTimeout(() => card.classList.add('show'), 180);
+
+    addHistory(currentResult);
+  }, 1580);
+}
+
+function closeStage(){
+  stage.className = 'stage';
+  card.className = 'card';
+  big.className = 'big-capsule';
+  busy = false;
+  knobWrap.classList.remove('disabled');
+  hint.style.opacity = 1;
+  hint.textContent = balls.length ? '돌려주세요!' : '눌러서 채우기!';
+}
+
+document.getElementById('againBtn').addEventListener('click', () => {
+  closeStage();
+  setTimeout(turn, 350);
+});
+stage.addEventListener('click', e => { if (e.target === stage && card.classList.contains('show')) closeStage(); });
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const b = currentResult.blessing;
+  const text = `${b.e} ${b.m}\n${b.d}`;
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+    .then(() => toast('덕담을 복사했어요! 소중한 사람에게 보내보세요 💌'))
+    .catch(() => toast('복사가 안 되는 환경이에요 😢'));
+});
+knobWrap.addEventListener('click', turn);
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'Enter'){
+    e.preventDefault();
+    if (card.classList.contains('show')) { closeStage(); }
+    else if (currentCapsule) openCapsule();
+    else turn();
+  }
+  if (e.code === 'Escape' && card.classList.contains('show')) closeStage();
+});
+
+function addHistory(res){
+  const s = document.createElement('span');
+  s.style.background = `linear-gradient(${shadeColor(res.color,40)} 50%, #fff 50%)`;
+  s.title = res.blessing.m;
+  s.addEventListener('click', () => toast(`${res.blessing.e} ${res.blessing.m}`));
+  historyEl.appendChild(s);
+  if (historyEl.children.length > 24) historyEl.firstChild.remove();
+}
+
+let toastTimer;
+function toast(t){
+  const el = document.getElementById('toast');
+  el.textContent = t; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ================== 파티클 ================== */
+const fx = document.getElementById('fx');
+const fctx = fx.getContext('2d');
+let parts = [];
+function resizeFx(){ fx.width = innerWidth * devicePixelRatio; fx.height = innerHeight * devicePixelRatio; fctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+addEventListener('resize', resizeFx); resizeFx();
+
+function burstParticles(color){
+  const cx = innerWidth/2, cy = innerHeight/2;
+  const palette = [color, '#ffe14d', '#ffffff', '#ffb23e', '#ff7ad1'];
+  for (let i = 0; i < 160; i++){
+    const a = Math.random()*Math.PI*2, sp = 4 + Math.random()*13;
+    parts.push({
+      x: cx, y: cy, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 2,
+      life: 1, decay: 0.008 + Math.random()*0.012,
+      size: 3 + Math.random()*6, color: palette[Math.random()*palette.length|0],
+      type: Math.random() < .45 ? 'star' : (Math.random() < .5 ? 'rect' : 'dot'),
+      rot: Math.random()*6, vr: (Math.random()-.5)*0.3,
+    });
+  }
+  // 나중에 반짝이는 잔광
+  for (let i = 0; i < 40; i++){
+    setTimeout(() => {
+      parts.push({
+        x: cx + (Math.random()-.5)*innerWidth*0.8, y: cy + (Math.random()-.5)*innerHeight*0.7,
+        vx: 0, vy: -0.3, life: 1, decay: 0.02, size: 4 + Math.random()*6,
+        color: '#fff6c0', type: 'sparkle', rot: 0, vr: 0,
+      });
+    }, 200 + Math.random()*1800);
+  }
+}
+function drawStar(x, y, r, rot){
+  fctx.beginPath();
+  for (let i = 0; i < 10; i++){
+    const rr = i % 2 ? r*0.45 : r, a = rot + i*Math.PI/5;
+    fctx.lineTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr);
+  }
+  fctx.closePath(); fctx.fill();
+}
+function fxLoop(){
+  fctx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p => p.life > 0);
+  for (const p of parts){
+    p.x += p.vx; p.y += p.vy;
+    if (p.type !== 'sparkle'){ p.vy += 0.18; p.vx *= 0.98; p.vy *= 0.98; }
+    p.rot += p.vr; p.life -= p.decay;
+    fctx.globalAlpha = Math.max(0, p.life);
+    fctx.fillStyle = p.color;
+    if (p.type === 'star') drawStar(p.x, p.y, p.size, p.rot);
+    else if (p.type === 'rect'){
+      fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.rot);
+      fctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2); fctx.restore();
+    } else if (p.type === 'sparkle'){
+      const s = p.size * Math.sin(p.life*Math.PI);
+      fctx.fillRect(p.x - s, p.y - 1, s*2, 2);
+      fctx.fillRect(p.x - 1, p.y - s, 2, s*2);
+      fctx.beginPath(); fctx.arc(p.x,p.y,s*0.3,0,7); fctx.fill();
+    } else { fctx.beginPath(); fctx.arc(p.x,p.y,p.size/2,0,7); fctx.fill(); }
+  }
+  fctx.globalAlpha = 1;
+  requestAnimationFrame(fxLoop);
+}
+
+/* ================== 효과음 (Web Audio, 외부파일 없음) ================== */
+const sfx = (() => {
+  let ac;
+  const get = () => (ac ||= new (window.AudioContext || window.webkitAudioContext)());
+  function tone(freq, dur, type='sine', vol=.15, delay=0, slide){
+    try {
+      const a = get(), o = a.createOscillator(), g = a.createGain();
+      const t = a.currentTime + delay;
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur);
+    } catch(e){}
+  }
+  return {
+    crank(){ for (let i = 0; i < 8; i++) tone(180 + (i%2)*40, .06, 'square', .05, i*.11); },
+    drop(){ tone(500, .12, 'triangle', .15, 0, 250); tone(380, .1, 'triangle', .12, .25, 200); tone(320, .08, 'triangle', .08, .42, 200); },
+    charge(){ tone(200, 1, 'sawtooth', .04, 0, 1200); },
+    flash(){
+      [523, 659, 784, 1047].forEach((f,i) => tone(f, .6, 'triangle', .12, i*.07));
+      tone(2093, .9, 'sine', .06, .3);
+    },
+  };
+})();
+
+fill();
+loop();
+fxLoop();
+</script>
+</body>
+</html>
